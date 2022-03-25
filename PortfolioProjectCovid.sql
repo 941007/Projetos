@@ -1,3 +1,5 @@
+--COVID Project related to two tables: one being covid deaths and the other one covid vaccinations
+
 /*
 SELECT TOP 10 *
 FROM PortfolioProjectCovid..covid_deaths
@@ -11,7 +13,7 @@ ORDER BY 3, 4
 */
 
 /*Selecionando os dados a serem utilizados: Local, data, total de casos, total de novos casos, 
-	total de mortes e população
+	total de mortes e populaÃ§Ã£o
 */
 USE PortfolioProjectCovid
 
