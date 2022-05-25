@@ -1,0 +1,453 @@
+---
+title: "Bellabeat Case Study"
+author: "Diego Koga Bernegozzi"
+date: '2022-05-07'
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+This project is to analyze how people use health-focused devices data from Fitbit to highlight or discover trends that may help in Bellabeat's future marketing campaigns.
+
+## **Bellabeat Company Description**
+
+Bellabeat is a high-tech manufacturer of health-focused products for women involving mostly smart devices.
+Bellabeat is a successful small company, but they have the potential to become a larger player in the global smart device market
+
+# **Ask Phase**
+
+------------------------------------------------------------------------
+
+## Guiding Questions
+
+### 1. What are some trends in smart device usage?
+
+There are multiple trends such as how active people are vs. how many calories they burn, hours slept per day, how much people exercise, at what time people exercise, etc.
+
+### 2. How could these trends apply to Bellabeat customers?
+
+They may be the same trends that Bellabeat's customers have but the company could not be tracking them or isn't aware or has a different view regarding some trends.
+Finding trends or shedding some light over them might create better products or services for their customers.
+
+### 3. How could these trends help influence Bellabeat marketing strategy?
+
+Bellabeat tracks its user's health statistics, therefore, we will be using data from FitBit's smart devices to find trends that could lead to strategies that might reach out to more customers or have a better response.
+
+### 4. What is the problem you are trying to solve?
+
+The necessity of understanding people's health trends using data from other manufacturer on the market to design better marketing strategies.
+
+## Key Tasks
+
+### 1. Identify Business Task:
+
+Analyze smart devices data to reveal trends based on users' behavior.
+Identify high-level recommendations that may influence Bellabeat's future marketing strategies.
+
+### 2. Consider Key Stakeholders
+
+-   **Primary Stakeholders**\
+    Urška Sršen: Bellabeat's cofounder and Chief Creative Officer (CEO)\
+    Sando Mur: Mathematician and Bellabeat's cofounder
+-   **Secondary stakeholders**\
+    Bellabeat Marketing Analytics Team
+
+# Prepare phase
+
+------------------------------------------------------------------------
+
+## 1. Where the data stored?
+
+The original version is stored at Kaggle in this [link](kaggle.com/datasets/arashnic/fitbit)
+
+## 2. How is the data organized?
+
+It's organized in multiple files within a variety of subjects both in long and wide format.
+
+## 3. Using ROCCC to evaluate data
+
+**3.1. Reliability:** No, the data is not reliable whatsoever since there's no margin of error described anywhere in the source and the sample size (33 people for daily activities dataset and 24 for daily sleep dataset) is far too small which can negatively impact the analysis.
+
+**3.2. Originality:** This dataset is not original; it was collected on Amazon Mechanical Turk platform by a third party.
+
+**3.3. Comprehensiveness:** No, there is no information that describes the participants of the survey which may cause a multitude of bias, especially selection bias since Bellabeat's customers are mostly female.
+
+**3.4. Current:** The data is from 2016, making it quite outdated which may not reflect on current trends.
+
+**3.5. Cited:** It was created in Amazon Mechanical Turk so it may not be very reliable since it's a platform to hire remotely located "crowd workers" that perform on-demand tasks.
+There are no characteristics from the people who answered the survey.
+
+## 4. How is the data integrity?
+
+There is nothing that categorizes it's users like gender or age which could give a better outcome to this analysis.
+Also, the sample size is far too small to give any substantial result without bias or errors and it's number has been documented wrong, it's stated that this data set has 30 participants, but while preparing data it has been noticed that there are 33 unique participants.
+This data set is of low quality and should not be used for creating strategies at all.
+This information at most could be used to find bits of hints.
+
+# Process Phase
+
+------------------------------------------------------------------------
+
+## 1. Setting up libraries
+
+```{r libraries}
+library("tidyverse")
+
+library("janitor")
+
+library("lubridate")
+
+library("magrittr")
+
+library("ggpubr")
+
+library("corrplot")
+```
+
+A brief introduction to the libraries above:
+
+Tidyverse is a core library for this project since it contains many packages that are essential.
+
+Janitor is used for cleaning data.
+
+Lubridate will be used to work with date types.
+
+Magrittr enables the use of pipes and to make code easier friendlier.
+
+GGpubr to create more types of plots, especially boxplots.
+
+Corrplots will be used to create correlational plots.
+
+## 2. Importing datasets
+
+You can also embed plots, for example:
+
+```{r datasets_import}
+daily_activity <- read.csv("Fittbase_data/daily_activity.csv")
+daily_sleep <- read.csv("Fittbase_data/daily_sleep.csv")
+
+```
+
+## 3. Datasets overview
+
+### 3.1 Checking column names
+
+```{r colnames}
+colnames(daily_activity)
+colnames(daily_sleep)
+```
+
+### 3.2 Brief look at data
+
+```{r head_daily_actv}
+head(daily_activity)
+```
+
+```{r head_daily_slp}
+head(daily_sleep)
+```
+
+### **3.3 Odd row while searching calories column**
+
+```{r odd_row, echo=FALSE}
+daily_activity[31, ]
+```
+
+Searching manually through daily_activity dataset I came across row 31 which is a very odd one, it has 1440 sedentary minutes but no other data.
+This row will be removed later on the cleaning phase.
+
+### 3.4 Checking for unique participants
+
+```{r uniques_daily_actv}
+length(unique(daily_activity$Id))
+```
+
+```{r uniques_daily_slp}
+length(unique(daily_sleep$Id))
+```
+
+It was documented that this dataset has 30 unique participants in the survey, but 33 unique Ids have been found.
+It's even worse looking at the daily sleep dataframe, this one has 24 unique participants.
+
+### 3.5 Understanding data structures
+
+```{r structs_daily_actv}
+str(daily_activity)
+```
+
+```{r structs_daily_slp}
+str(daily_sleep)
+```
+
+So far, there seems to be no problem with data structure besides the date columns being in the character type.
+
+### 3.6 Searching for missing values
+
+```{r actv_missing_vals}
+colSums(is.na(daily_activity))
+
+```
+
+```{r slp_missing_vals}
+colSums(is.na(daily_sleep))
+```
+
+No NA data has been found.
+
+### 3.7 Searching for duplicates
+
+```{r daily_actv_dupes}
+daily_activity[duplicated(daily_activity), ]
+```
+
+```{r daily_slp_dupes}
+daily_sleep[duplicated(daily_sleep), ]
+```
+
+## 4. Dataset transformation
+
+From here on I'll be using clean_daily_activity and clean_daily_sleep as my work dataframes to ensure that the original data won't be affected..
+
+```{r new_frames}
+clean_daily_activity <- daily_activity
+clean_daily_sleep <- daily_sleep
+```
+
+### 4.1 Creating columns for totals
+
+**Total Active Minutes**
+
+```{r total_active_minutes}
+clean_daily_activity <- 
+  clean_daily_activity %>%  rowwise() %>% 
+  mutate(TotalActiveMinutes = sum(VeryActiveMinutes,
+                                  FairlyActiveMinutes,
+                                  LightlyActiveMinutes, na.rm = TRUE))
+```
+
+**Total Active Hours**
+
+```{r total_active_hours}
+clean_daily_activity <- 
+  clean_daily_activity %>%  rowwise() %>% 
+  mutate(TotalActiveHours = round(TotalActiveMinutes / 60, 2))
+```
+
+**Sedentary Hours**
+
+```{r sedentary_hours}
+clean_daily_activity <- 
+  clean_daily_activity %>%  rowwise() %>% 
+  mutate(SedentaryHours = round(SedentaryMinutes / 60, 2))
+```
+
+**Hours spent in bed**
+
+```{r hours_in_bed}
+clean_daily_sleep <-
+  clean_daily_sleep %>% rowwise() %>% 
+  mutate(HoursInBed = round(TotalTimeInBed / 60, 2))
+```
+
+**Hours slept**
+
+```{r hours_slept}
+clean_daily_sleep <-
+  clean_daily_sleep %>% rowwise() %>% 
+  mutate(SleptHours = round(TotalMinutesAsleep / 60, 2))
+```
+
+### 4.2 Cleaning Data
+
+#### 4.2.1 Removing row 31
+
+```{r remove_row_31}
+clean_daily_activity <- clean_daily_activity[-(31), ]
+```
+
+#### 4.2.2 Removing Duplicates
+
+```{r removing_actv_duplicates}
+clean_daily_activity <- clean_daily_activity[!duplicated(clean_daily_activity), ]
+```
+
+```{r removing_slp_duplicates}
+clean_daily_sleep <- clean_daily_sleep[!duplicated(clean_daily_sleep), ]
+```
+
+#### 4.2.3 Altering date formats
+
+The date formats for both dataframes is in "MDY", I'll be changing them to "DMY"
+
+```{r date_daily_actv}
+clean_daily_activity$ActivityDate <- format(as.Date
+                                            (clean_daily_activity$ActivityDate,
+                                              format="%m/%d/%Y"), "%d/%m/%Y")
+```
+
+```{r date_slp}
+clean_daily_sleep$SleepDay <- format(as.Date(clean_daily_sleep$SleepDay, 
+                                             format="%m/%d/%Y"), "%d/%m/%Y")
+
+```
+
+#### 4.2.3 Uniting dataframes
+
+This choice was to make analysis more consistent since the datasets have different sample sizes.
+
+```{r unite_frames}
+daily_stats <- merge(x = clean_daily_activity, y= clean_daily_sleep, by.x=c("Id", "ActivityDate"), by.y=c("Id", "SleepDay"))
+```
+
+# Analyze Phase
+
+------------------------------------------------------------------------
+
+## 1. Observations and Deductions
+
+### 1.1. Activity outliers deductions
+
+```{r very_active_outliers, echo=FALSE}
+very_active_graph <- ggplot(daily_stats) + 
+  geom_boxplot(mapping = aes(y = VeryActiveDistance))
+
+moderately_active_graph <- ggplot(daily_stats) + 
+  geom_boxplot(mapping = aes(y = ModeratelyActiveDistance))
+
+light_active_graph <- ggplot(daily_stats) + 
+  geom_boxplot(mapping = aes(y = LightActiveDistance))
+
+ggarrange(very_active_graph, moderately_active_graph, light_active_graph)
+```
+
+```{r minutes_active_outliers}
+very_active_graph <- ggplot(daily_stats) + 
+  geom_boxplot(mapping = aes(y = VeryActiveMinutes))
+
+moderately_active_graph <- ggplot(daily_stats) + 
+  geom_boxplot(mapping = aes(y =FairlyActiveMinutes))
+
+light_active_graph <- ggplot(daily_stats) + 
+  geom_boxplot(mapping = aes(y = LightlyActiveMinutes))
+
+ggarrange(very_active_graph, moderately_active_graph, light_active_graph)
+```
+
+These boxplots show that for the columns VeryActive, ModeratelyActive and LightActive and their counterparts in minutes being VeryActive, FairlyActive and LightlyActive all have some outliers, but since these numbers are not otherworldly, we can deduce those instances are just people who exercise more than others by taking in consideration that people have different daily habits.
+
+### 1.2 Corrplots
+
+**Distance correlation plot**
+
+```{r corr_distance, echo=FALSE}
+corr_distan <- clean_daily_activity %>% select(TotalSteps,
+                                               VeryActiveDistance,
+                                               ModeratelyActiveDistance,
+                                               LightActiveDistance,
+                                               Calories)
+                                               
+
+corr_minutes <- clean_daily_activity %>% select(SedentaryMinutes, 
+                                                VeryActiveMinutes,
+                                                FairlyActiveMinutes,
+                                                LightlyActiveMinutes,
+                                                Calories)
+
+
+corrplot(cor(corr_distan), tl.col = "black", method="number", col = COL1("YlOrRd"), number.cex = 0.8)
+
+```
+
+**Active minutes correlation plot**
+
+```{r corr_minutes, echo=FALSE}
+corr_minutes <- clean_daily_activity %>% select(SedentaryMinutes, 
+                                                VeryActiveMinutes,
+                                                FairlyActiveMinutes,
+                                                LightlyActiveMinutes,
+                                                Calories)
+
+corrplot(cor(corr_minutes), tl.col = "black", method="number", col = COL1("YlOrRd"), number.cex = 0.9)
+```
+
+These plots show that the there's seems to be a very positive relationship between steps taken and vigorous along with light activities.
+Besides, depending on how much time was spent doing vigorous (Very Active in the table) activities more calories they burnt.
+Also, the bigger the amount of steps and depending on it's intensity, the bigger was the calorie expenditure.
+
+### 1.3 Summary
+
+**Daily Stats Dataframe**
+
+```{r daily_stats}
+summary(daily_stats)
+```
+
+**Observations**
+
+-   The average amount of steps taken per day is 8515;
+
+-   Average for Very, Moderately and Light Active Distances are 1.44, 0.74 and 3.79 kilometers respectively;
+
+-   The average distance traveled is 6.0Km;
+
+-   The average burnt calories per day is: 2389;
+
+-   The average for Active Hours is 4.32;
+
+-   Participants have 11.87 hours of average sedentary time;
+
+-   Participants have 7 hours of average sleeping time;
+
+-   Participants in average have one sleeping record per day.
+
+**Deductions**
+
+-   Participants appear to travel by foot quite often;
+
+-   Even though participants have an average of 11.87 hours of inactive time, participants may not be considered sedentary if we take a look at the "very active" and "fairly active" columns, which would give us each 25 and 18 minutes respectively per day totalizing 175 of very active minutes and 126 fairly active minutes per week which for adults is considered healthy.
+
+-   Participants seem to have a healthy sleep time average;
+
+-   Participants usually take 39 minutes to fall asleep based on subtracting minutes asleep from time in bed;
+
+-   In average participants slept once a day.
+
+# Share Phase
+
+------------------------------------------------------------------------
+
+The following graph shows the average day of those who participated in this survey.
+
+![Participants Daily Activities Organized by Time Spent. Graph created in Excel](Fittbase_data/Fitabase%20Data%204.12.16-5.12.16/ParticipantsActivity.png)
+
+By taking a look at this graph It can be noticed that the participants seem to have a healthy sleep time and seem to be quite active daily, which should be observed closer.
+
+Looking deeper into how active the participants were, I present the following graph.
+
+![Time Spent by Participants per Activity Intensity. Graph created in Excel](Fittbase_data/Fitabase%20Data%204.12.16-5.12.16/ParticipantsIntensity.png)
+
+In the above image It can be seen that those who participated the survey spent an average adequate amount of time per day doing moderate to very intense activities, if we multiplied these numbers times 7 we would reach an average of 175 minutes of very intense activities per week and 126 minutes of moderate intense activities which would be the ideal for adults according to [this text](https://www.allianzcare.com/en/about-us/blog/2020/01/sedentary-life.html) from Allianz Care.
+
+# Act Phase
+
+## Conclusion
+
+From the data analysed it's clear that most participants are not sedentary but could increase the amount of time spent exercising to lessen idling time.
+Also it seems participants tend to walk quite a lot daily which could be something that may be helpful in creating solutions.
+Overall this data shows that FitBit users exercise daily but there's room for improvement.
+
+## Recommendations
+
+1.  Create a gamification solution to influence people to be less idle or to do more vigorous exercises;
+
+2.  Include a function that tracks if the users are active in bed or just trying to sleep.
+    This function could help in improving sleep habits;
+
+3.  Bellabeat can track the sedentary time and after a fix amount of time send an alert to convince the user to exercise or start moving around.
