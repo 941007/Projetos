@@ -1,21 +1,20 @@
 --COVID Project related to two tables: one being covid deaths and the other one covid vaccinations
 
-/*
+USE PortfolioProjectCovid
+
+-- Taking a look at data
 SELECT TOP 10 *
 FROM PortfolioProjectCovid..covid_deaths
 ORDER BY 3,4
 
-
-
-SELECT *
+SELECT TOP 10 *
 FROM PortfolioProjectCovid..covid_vaccinations
 ORDER BY 3, 4
-*/
 
-/*Selecionando os dados a serem utilizados: Local, data, total de casos, total de novos casos, 
-	total de mortes e população
+
+/*Selecting data: Local, data, total cases, total new cases, 
+	total deaths and population
 */
-USE PortfolioProjectCovid
 
 SELECT location, date, population, new_cases, total_cases, total_deaths
 FROM PortfolioProjectCovid..covid_deaths
@@ -73,7 +72,7 @@ SELECT  dea.continent, dea.location, dea.date, vac.new_vaccinations,
 			OVER (PARTITION BY dea.location 
 			ORDER BY dea.location, dea.date
 			ROWS UNBOUNDED PRECEDING)
---ROWS UNBOUNDED PRECENDING because the sum function wouldn't work without it because of a 900 byte limit of the window
+--ROWS UNBOUNDED PRECENDING is used because the sum function wouldn't work without it because of a 900 byte limit of the window
 FROM PortfolioProjectCovid..covid_vaccinations vac
 JOIN PortfolioProjectCovid..covid_deaths dea
 	ON vac.location = dea.location
